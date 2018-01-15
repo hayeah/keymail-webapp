@@ -131,7 +131,7 @@ export enum SOCIAL_MEDIA_PLATFORMS {
   HACKER_NEWS = 'hacker_news',
 }
 
-export const SOCIAL_MEDIALS = [
+export const SOCIAL_MEDIAS = [
   {
     'platform': SOCIAL_MEDIA_PLATFORMS.GITHUB,
     'label': 'GitHub',

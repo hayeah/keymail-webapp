@@ -13,7 +13,7 @@ import { Store } from '../../store'
 import { Icon } from 'antd'
 import {
   SOCIAL_MEDIA_PLATFORMS,
-  SOCIAL_MEDIALS,
+  SOCIAL_MEDIAS,
   BINDING_SOCIAL_STATUS,
   GITHUB_GIST_FILENAME,
 } from '../../constants'
@@ -110,7 +110,7 @@ class Proving extends React.Component<Iprops, Istate> {
     }
 
     let socialMedia: any = {}
-    for (let sm of SOCIAL_MEDIALS) {
+    for (let sm of SOCIAL_MEDIAS) {
       if (sm.platform === platform) {
         socialMedia = sm
       }

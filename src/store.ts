@@ -394,7 +394,7 @@ export class Store {
 
     transactionWillCreate()
     this.boundSocialsContract.bind(this.currentUser.userAddress, signedBoundSocialsHex)
-      .on('transactionHash', async (hash) => {
+      .on('transactionHash', (hash) => {
         transactionDidCreate(hash)
         runInAction(() => {
           if (typeof this.currentUserBindingSocials.github !== 'undefined') {
@@ -425,7 +425,7 @@ export class Store {
           }
         }
       })
-      .on('error', async (error: Error) => {
+      .on('error', (error: Error) => {
         sendingDidFail(error)
       })
   }
@@ -730,7 +730,7 @@ export class Store {
         if (err.name !== 'RecordNotFoundError') {
           // Maybe we have a corrupted session on local, delete it.
           return Promise.all([
-            (this.box as Cryptobox).session_delete(sessionTag).then(noop),
+            (this.box as Cryptobox).session_delete(sessionTag),
             this.db.getSession(sessionTag, currentUser.userAddress).then((_session) => {
               if (_session) {
                 return this.db.deleteSession(this.currentUser as Iuser, _session)
@@ -1475,7 +1475,7 @@ export class Store {
     }
     const _user: Iuser = this.currentUser as Iuser
 
-    await bindEvents.forEach(async (boundSocialEvent: any) => {
+    await Promise.all(bindEvents.map(async (boundSocialEvent: any) => {
       const userAddress = boundSocialEvent.userAddress
       if (userAddress !== _user.userAddress) {
         return
@@ -1497,7 +1497,7 @@ export class Store {
 
         await this.updateBoundSocials(_signedBoundSocial.socialMedias, _user)
       }
-    })
+    }))
 
     await this.updateLastFetchBlockOfBoundSocials(lastBlock, _user)
   }
@@ -1703,20 +1703,20 @@ export class Store {
     throw (new Error('status is not 200'))
   }
   private updateBindingSocials = async (bindingSocials: IbindingSocials, user: Iuser) => {
-      await this.db.updateBindingSocials(user, bindingSocials).then(noop)
+      await this.db.updateBindingSocials(user, bindingSocials)
       runInAction(() => {
         this.currentUserBindingSocials = bindingSocials
       })
   }
   private updateBoundSocials = async (boundSocials: IboundSocials, user: Iuser) => {
-      await this.db.updateBoundSocials(user, boundSocials).then(noop)
+      await this.db.updateBoundSocials(user, boundSocials)
       runInAction(() => {
         this.currentUserBoundSocials = boundSocials
       })
   }
   private updateLastFetchBlockOfBoundSocials = async (lastBlock: number, user: Iuser) => {
       const _newLastBlock = lastBlock < 3 ? 0 : lastBlock - 3
-      await this.db.updateLastFetchBlockOfBoundSocials(user, _newLastBlock).then(noop)
+      await this.db.updateLastFetchBlockOfBoundSocials(user, _newLastBlock)
       runInAction(() => {
         this.currentUserlastFetchBlockOfBoundSocials = _newLastBlock
       })
@@ -1724,7 +1724,7 @@ export class Store {
 
   private updateLastFetchBlockOfBroadcast = async (lastBlock: number, user: Iuser) => {
       const _newLastBlock = lastBlock < 3 ? 0 : lastBlock - 3
-      await this.db.updateLastFetchBlockOfBroadcast(user, _newLastBlock).then(noop)
+      await this.db.updateLastFetchBlockOfBroadcast(user, _newLastBlock)
       runInAction(() => {
         this.currentUserlastFetchBlockOfBroadcast = _newLastBlock
       })
@@ -1795,7 +1795,7 @@ export class Store {
 
     if (messages.length === 0) {
       const _newLastBlock = lastBlock < 3 ? 0 : lastBlock - 3
-      await this.db.updateLastFetchBlock(user, _newLastBlock).then(noop)
+      await this.db.updateLastFetchBlock(user, _newLastBlock)
       runInAction(() => {
         this.currentUserlastFetchBlock = _newLastBlock
       })
@@ -1916,7 +1916,7 @@ export class Store {
       if (err.name !== 'RecordNotFoundError') {
         // Maybe we have a corrupted session on local, delete it.
         return Promise.all([
-          box.session_delete(sessionTag).then(noop),
+          box.session_delete(sessionTag),
           this.db.getSession(sessionTag, (this.currentUser as Iuser).userAddress).then((session) => {
             if (session) {
               return this.db.deleteSession(this.currentUser as Iuser, session)

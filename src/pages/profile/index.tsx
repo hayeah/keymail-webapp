@@ -14,7 +14,7 @@ import {
 
 import {
   USER_STATUS,
-  SOCIAL_MEDIALS,
+  SOCIAL_MEDIAS,
   TRUSTBASE_CONNECT_STATUS,
 } from '../../constants'
 
@@ -86,7 +86,7 @@ class Profile extends React.Component<Iprops, Istate> {
       }
 
       const socialsElements = []
-      for (let social of SOCIAL_MEDIALS) {
+      for (let social of SOCIAL_MEDIAS) {
         const boundSocial = currentUserBoundSocials[social.platform]
         let stateText = null
         if (typeof boundSocial === 'undefined') {
