@@ -5,6 +5,7 @@ import { inject, observer } from 'mobx-react'
 import {
   Link,
 } from 'react-router-dom'
+
 import CommonHeaderPage from '../../containers/CommonHeaderPage'
 import HashAvatar from '../../components/HashAvatar'
 import { Store } from '../../store'
@@ -46,9 +47,14 @@ class Profile extends React.Component<Iprops, Istate> {
       currentUser,
       isFetchingMessage,
       startFetchBoundEvents,
+      listenForConnectStatusChange,
     } = this.props.store
     if (connectStatus === TRUSTBASE_CONNECT_STATUS.SUCCESS && currentUser && !isFetchingMessage) {
       startFetchBoundEvents()
+    }
+
+    if (isFirstMount) {
+      listenForConnectStatusChange(this.connectStatusListener)
     }
   }
 
@@ -108,6 +114,17 @@ class Profile extends React.Component<Iprops, Istate> {
       {userAvatar}
       {socials}
     </CommonHeaderPage>
+  }
+
+  private connectStatusListener = (prev: TRUSTBASE_CONNECT_STATUS, cur: TRUSTBASE_CONNECT_STATUS) => {
+    const {
+      stopFetchBoundEvents
+    } = this.props.store
+    if (prev !== TRUSTBASE_CONNECT_STATUS.SUCCESS) {
+      this.componentDidMount(false)
+    } else if (cur !== TRUSTBASE_CONNECT_STATUS.SUCCESS) {
+      stopFetchBoundEvents()
+    }
   }
 }
 

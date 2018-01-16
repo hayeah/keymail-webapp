@@ -3,6 +3,7 @@ import * as React from 'react'
 import { inject, observer } from 'mobx-react'
 
 import {
+  Link,
   Redirect,
   RouteComponentProps,
 } from 'react-router-dom'
@@ -30,10 +31,6 @@ import {
   IsignedTwitterClaim,
   IbindingSocial,
 } from '../../../typings/proof.interface'
-
-import {
-  Link,
-} from 'react-router-dom'
 
 interface Iparams {
   platform: string

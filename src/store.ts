@@ -425,6 +425,7 @@ export class Store {
             _bindingSocials.twitter = undefined
           }
           if (typeof this.currentUser !== 'undefined') {
+            this.currentUserBoundSocials = _bindingSocials
             await this.updateBindingSocials(_bindingSocials, this.currentUser)
           }
         }
