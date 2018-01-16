@@ -9,8 +9,8 @@ interface IboundSocial {
 }
 
 interface IboundSocials {
-  twitter?: IboundSocial,
-  github?: IboundSocial,
+  twitter?: IboundSocial
+  github?: IboundSocial
 }
 
 interface IsignedBoundSocials {
@@ -21,10 +21,10 @@ interface IsignedBoundSocials {
 interface IgithubClaim {
   userAddress: string
   service: {
-    name: string,
-    username: string,
+    name: string
+    username: string
   },
-  ctime: number,
+  ctime: number
   publicKey: string
 }
 
@@ -33,8 +33,19 @@ interface IsignedGithubClaim {
   signature: string
 }
 
+interface ItwitterClaim {
+  userAddress: string
+  username: string
+  publicKey: string
+}
+
+interface IsignedTwitterClaim {
+  claim: ItwitterClaim
+  signature: string
+}
+
 interface IbindingSocial extends IboundSocial {
-  signedClaim: IsignedGithubClaim
+  signedClaim: IsignedGithubClaim|IsignedTwitterClaim
   status: BINDING_SOCIAL_STATUS
 }
 

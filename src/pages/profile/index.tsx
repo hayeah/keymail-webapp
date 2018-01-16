@@ -95,7 +95,7 @@ class Profile extends React.Component<Iprops, Istate> {
           stateText = <a>{boundSocial.username}@{social.platform}</a>
         }
         socialsElements.push(
-          <li>
+          <li key={social.platform}>
             <Icon type={social.platform} style={{marginRight: '5px'}}/>
             {stateText}
           </li>

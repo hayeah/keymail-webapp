@@ -26,6 +26,8 @@ import {
   Igist,
   IgithubClaim,
   IsignedGithubClaim,
+  ItwitterClaim,
+  IsignedTwitterClaim,
   IbindingSocial,
 } from '../../../typings/proof.interface'
 
@@ -44,8 +46,17 @@ interface Istate {
   isProving: boolean
   username: string
   platform: string
-  claim?: IsignedGithubClaim
+  githubClaim?: IsignedGithubClaim
+  twitterClaim?: IsignedTwitterClaim
+  twitterAccessToken?: string
   successful: boolean
+}
+
+const getTwitterClaim = (signedClaim: IsignedTwitterClaim) => {
+  return `Keymail
+addr: ${signedClaim.claim.userAddress}
+public key: ${signedClaim.claim.publicKey}
+sig: ${signedClaim.signature}`
 }
 
 const getGithubClaim = (signedClaim: IsignedGithubClaim) => {
@@ -91,6 +102,30 @@ class Proving extends React.Component<Iprops, Istate> {
 
   private claimTextarea: any
 
+  public async componentDidMount() {
+    if (this.state.platform === SOCIAL_MEDIA_PLATFORMS.TWITTER) {
+      const authorization =
+        '::OHJCRzF4clVCcEZnRTJUNWJET3NrR0ZwdjpXT0wyU0NSOFJKcjM4TFRCbFBFcVp6NHI2ZnlVOXFxQ0VMQmVDRTdobWJPY3VjaG5EaQ=='
+      const init = {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Authorization': 'Basic ' + authorization,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body: 'grant_type=client_credentials',
+      } as RequestInit
+
+      const oauth2: any = await fetch(`https://cors-anywhere.herokuapp.com/https://api.twitter.com/oauth2/token`, init)
+        .then((resp) => resp.json())
+      this.setState({
+        twitterAccessToken: oauth2.access_token
+      })
+
+      storeLogger.log(JSON.stringify(oauth2))
+    }
+  }
+
   public render() {
     const {
       currentUser,
@@ -129,7 +164,7 @@ class Proving extends React.Component<Iprops, Istate> {
           <Link to="/profile">Cancel</Link>
           <a onClick={this.handleContinue}>Continue</a>
         </div>
-      } else if (typeof this.state.claim !== 'undefined') {
+      } else if (typeof this.state.githubClaim !== 'undefined') {
         return <div>
           <p>{this.state.username}</p>
           <p>@{this.state.platform}</p>
@@ -139,7 +174,7 @@ class Proving extends React.Component<Iprops, Istate> {
             rows={15}
             onClick={this.focusClaimTextarea}
             ref={(textarea) => { this.claimTextarea = textarea }}
-            value={getGithubClaim(this.state.claim)}
+            value={getGithubClaim(this.state.githubClaim)}
             readOnly={true}
           />
 
@@ -150,7 +185,35 @@ class Proving extends React.Component<Iprops, Istate> {
           <Link to="/profile">Cancel</Link>
 
           <br />
-          <a onClick={this.checkProof}>OK posted! Check for it!</a>
+          <a onClick={this.checkGithubProof}>OK posted! Check for it!</a>
+
+          <br />
+          <a onClick={this.uploadProof}>Upload the proof to blockchain!</a>
+        </div>
+      } else if (typeof this.state.twitterClaim !== 'undefined') {
+        const twitterClaimText = getTwitterClaim(this.state.twitterClaim)
+        const tweetClaimURL = 'https://twitter.com/home?status=' + encodeURI(twitterClaimText)
+        return <div>
+          <p>{this.state.username}</p>
+          <p>@{this.state.platform}</p>
+          <p>Please tweet the text below exactly as it appears.</p>
+          <textarea
+            cols={80}
+            rows={15}
+            onClick={this.focusClaimTextarea}
+            ref={(textarea) => { this.claimTextarea = textarea }}
+            value={twitterClaimText}
+            readOnly={true}
+          />
+
+          <br />
+          <a href={tweetClaimURL} target="_blank">Tweet it now</a>
+
+          <br />
+          <Link to="/profile">Cancel</Link>
+
+          <br />
+          <a onClick={this.checkTwitterProof}>OK posted! Check for it!</a>
 
           <br />
           <a onClick={this.uploadProof}>Upload the proof to blockchain!</a>
@@ -182,7 +245,48 @@ class Proving extends React.Component<Iprops, Istate> {
       }
     })
   }
-  private checkProof = async () => {
+  private checkTwitterProof = async () => {
+    if (typeof this.state.twitterClaim === 'undefined') {
+      return
+    }
+
+    const timelineURL =
+      `https://cors-anywhere.herokuapp.com/https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=`
+      + this.state.username + '&exclude_replies=true&tweet_mode=extended'
+    const tweets: any[] = await fetch(timelineURL, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + this.state.twitterAccessToken,
+      }
+    })
+      .then((resp) => resp.json())
+    storeLogger.log(JSON.stringify(tweets))
+
+    const _claimText = getTwitterClaim(this.state.twitterClaim)
+    let claimTweet: any
+    for (let tweet of tweets) {
+      if (tweet.full_text === _claimText) {
+        storeLogger.log(JSON.stringify(tweet))
+        claimTweet = tweet
+        break
+      }
+    }
+
+    if (typeof claimTweet === 'undefined') {
+      alert('cloud not found claim!')
+      return
+    }
+    const bindingSocial: IbindingSocial = {
+      status: BINDING_SOCIAL_STATUS.CHECKED,
+      signedClaim: this.state.twitterClaim,
+      proofURL: `https://twitter.com/statuses/${claimTweet.id_str}`,
+      username: this.state.username
+    }
+    this.props.store.addBindingSocial(SOCIAL_MEDIA_PLATFORMS.TWITTER, bindingSocial)
+    alert('Congratulations! the claim is verified!')
+  }
+
+  private checkGithubProof = async () => {
     const init = {
       method: 'GET',
       mode: 'cors',
@@ -226,7 +330,7 @@ class Proving extends React.Component<Iprops, Istate> {
       return
     }
 
-    if (JSON.stringify(this.state.claim) === JSON.stringify(signedClaim)) {
+    if (JSON.stringify(this.state.githubClaim) === JSON.stringify(signedClaim)) {
       const bindingSocial: IbindingSocial = {
         status: BINDING_SOCIAL_STATUS.CHECKED,
         signedClaim: signedClaim,
@@ -268,17 +372,30 @@ class Proving extends React.Component<Iprops, Istate> {
           ctime: Math.floor(Date.now() / 1000),
           publicKey: currentUserPublicKey,
         }
-        const signature = '0x' + this.props.store.currentUserSign(JSON.stringify(githubClaim))
+        const githubSignature = '0x' + this.props.store.currentUserSign(JSON.stringify(githubClaim))
         const signedGithubClaim: IsignedGithubClaim = {
           githubClaim,
-          signature,
+          signature: githubSignature,
         }
         this.setState({
           isProving: true,
-          claim: signedGithubClaim
+          githubClaim: signedGithubClaim
         })
         break
       case SOCIAL_MEDIA_PLATFORMS.TWITTER:
+        const twitterClaim: ItwitterClaim = {
+          userAddress: currentUser.userAddress,
+          username: this.state.username,
+          publicKey: currentUserPublicKey,
+        }
+        const twitterSignature = '0x' + this.props.store.currentUserSign(JSON.stringify(twitterClaim))
+        this.setState({
+          isProving: true,
+          twitterClaim: {
+            claim: twitterClaim,
+            signature: twitterSignature,
+          },
+        })
         break
       case SOCIAL_MEDIA_PLATFORMS.FACEBOOK:
         break

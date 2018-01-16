@@ -139,7 +139,7 @@ export class Store {
   @observable public isFetchingBroadcast = false
   @observable public isFetchingBoundEvents = false
 
-  @observable public currentUserBoundSocials: IboundSocials = {}
+  @observable.ref public currentUserBoundSocials: IboundSocials = {}
   @observable public currentUserBindingSocials: IbindingSocials = {}
   public constructor() {
     this.db = new DB()
@@ -290,6 +290,10 @@ export class Store {
                   this.currentUserlastFetchBlockOfBoundSocials,
                 ]
               ] = loadedResult}
+              if (typeof this.currentUser !== 'undefined') {
+                this.currentUserBoundSocials = this.currentUser.boundSocials
+                this.currentUserBindingSocials = this.currentUser.bindingSocials
+              }
             }
             const prevConnectStatus = this.connectStatus
             this.connectStatus = NO_ACCOUNT
@@ -1147,6 +1151,8 @@ export class Store {
       if (this.currentUser) {
         addUsedNetwork(networkId)
         setLastUsedUser(networkId, this.currentUser.userAddress)
+        this.currentUserBoundSocials = this.currentUser.boundSocials
+        this.currentUserBindingSocials = this.currentUser.bindingSocials
       }
       if (sessions) {
         this.currentSession = undefined
@@ -1593,6 +1599,8 @@ export class Store {
       if (this.currentUser) {
         addUsedNetwork(networkId)
         setLastUsedUser(networkId, this.currentUser.userAddress)
+        this.currentUserBoundSocials = this.currentUser.boundSocials
+        this.currentUserBindingSocials = this.currentUser.bindingSocials
       }
 
       this.currentEthereumAccount = web3.eth.defaultAccount
