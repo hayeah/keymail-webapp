@@ -18,7 +18,6 @@ import {
 import { keys, message as proteusMessage } from 'wire-webapp-proteus'
 import { Cryptobox, CryptoboxSession } from 'wire-webapp-cryptobox'
 
-const ed2curve = require('ed2curve')
 const sodium = require('libsodium-wrappers-sumo')
 
 import DB from './DB'
@@ -75,8 +74,13 @@ import {
   hexToUtf8,
   noop,
   storeLogger,
-  dumpCryptobox
+  dumpCryptobox,
+  unixToday,
 } from './utils'
+
+import {
+  publicKeyFromHexStr
+} from './crypto.utils'
 
 import {
   IboundSocials,
@@ -84,6 +88,7 @@ import {
   IbindingSocial,
   IbindingSocials,
 } from '../typings/proof.interface'
+import { TwitterResource } from './resources/twitter'
 
 const {
   IdentityKeyPair,
@@ -162,6 +167,18 @@ export class Store {
   private fetchBoundEventsTimeout: number
   private db: DB
   private broadcastMessagesSignatures: string[]
+  private _twitterResource: TwitterResource|undefined
+
+  public get twitterResource(): TwitterResource {
+    if (typeof this._twitterResource === 'undefined') {
+      this._twitterResource = new TwitterResource(
+          '8rBG1xrUBpFgE2T5bDOskGFpv',
+          'WOL2SCR8RJr38LTBlPEqZz4r6fyU9qqCELBeCE7hmbOcuchnDi',
+        )
+    }
+
+    return this._twitterResource
+  }
 
   @computed
   public get pageLength() {
@@ -380,8 +397,7 @@ export class Store {
       return
     }
 
-    const user = this.currentUser as Iuser
-    const newBoundSocials: IboundSocials = Object.assign({}, user.boundSocials)
+    const newBoundSocials: IboundSocials = Object.assign({}, this.currentUserBoundSocials)
     if (typeof this.currentUserBindingSocials.github !== 'undefined') {
       const _bindingSocial = this.currentUserBindingSocials.github
       newBoundSocials.github = {username: _bindingSocial.username, proofURL: _bindingSocial.proofURL}
@@ -415,8 +431,6 @@ export class Store {
             sendingDidFail(new Error('Unknown error'))
             return
           }
-          sendingDidComplete()
-
           const _bindingSocials = Object.assign({}, this.currentUserBindingSocials)
           if (typeof _bindingSocials.github !== 'undefined') {
             _bindingSocials.github = undefined
@@ -425,9 +439,14 @@ export class Store {
             _bindingSocials.twitter = undefined
           }
           if (typeof this.currentUser !== 'undefined') {
-            this.currentUserBoundSocials = _bindingSocials
+            runInAction(() => {
+              this.currentUserBoundSocials = Object.assign({}, newBoundSocials)
+              storeLogger.info(JSON.stringify(this.currentUserBoundSocials))
+            })
             await this.updateBindingSocials(_bindingSocials, this.currentUser)
           }
+
+          sendingDidComplete()
         }
       })
       .on('error', (error: Error) => {
@@ -435,18 +454,28 @@ export class Store {
       })
   }
 
+  public getUserPublicKey = async (
+    userAddress: string
+  ) => {
+    const {
+      publicKey: identityFingerprint
+    } = await this.getIdentity(userAddress)
+    if (Number(identityFingerprint) === 0) {
+      return ''
+    }
+    return identityFingerprint
+  }
+
+  public getIdentity = async (userAddress: string) => {
+    return await this.identitiesContract.getIdentity(userAddress)
+  }
+
   public getCurrentUserPublicKey = async () => {
     if (typeof this.currentUser === 'undefined') {
       return ''
     }
 
-    const {
-      publicKey: identityFingerprint
-    } = await this.identitiesContract.getIdentity(this.currentUser.userAddress)
-    if (Number(identityFingerprint) === 0) {
-      return ''
-    }
-    return identityFingerprint
+    return await this.getUserPublicKey(this.currentUser.userAddress)
   }
 
   public register = async ({
@@ -569,6 +598,15 @@ export class Store {
     return waitForTransactionReceipt()
   }
 
+  public getBlockHash = async (blockNumber: number): Promise<string|'0x0'> => {
+    return await getWeb3().eth.getBlock(blockNumber)
+      .then((block) => block.hash)
+      .catch((err: Error) => {
+        storeLogger.error(err)
+        return '0x0'
+      })
+  }
+
   public checkRegister = async (
     user: Iuser,
     {
@@ -620,10 +658,7 @@ export class Store {
           }
 
           if (registeredIdentityFingerprint === `0x${identityKeyPair.public_key.fingerprint()}`) {
-            const blockHash = await web3.eth.getBlock(blockNumber).then((block) => block.hash).catch((err: Error) => {
-              storeLogger.error(err)
-              return '0x0'
-            })
+            const blockHash = await this.getBlockHash(blockNumber)
             if (Number(blockHash) === 0) {
               return window.setTimeout(waitForTransactionReceipt, 1000, counter)
             }
@@ -1467,44 +1502,49 @@ export class Store {
     })
   }
 
+  public getBoundEvents = async (
+    lastFetchBlock: web3BlockType,
+    userAddress: string,
+  ) => {
+    return await this.boundSocialsContract.getBindEvents({
+      fromBlock: lastFetchBlock > 0 ? lastFetchBlock : 0,
+      filter: {
+        userAddress
+      }
+    })
+  }
+
   private fetchBoundEvents = async (
-    lastFetchBlock = this.currentUserlastFetchBlockOfBoundSocials
+    lastFetchBlock = this.currentUserlastFetchBlockOfBoundSocials,
+    userAddress = this.currentUser!.userAddress
   ) => {
     const {
       lastBlock,
       bindEvents
-    } = await this.boundSocialsContract.getBindEvents({
-      fromBlock: lastFetchBlock > 0 ? lastFetchBlock : 0
-    })
+    } = await this.getBoundEvents(lastFetchBlock, userAddress)
 
-    if (typeof this.currentUser === 'undefined') {
+    if (typeof this.currentUser === 'undefined' || bindEvents.length === 0) {
       return
     }
     const _user: Iuser = this.currentUser as Iuser
 
-    await Promise.all(bindEvents.map(async (boundSocialEvent: any) => {
-      const userAddress = boundSocialEvent.userAddress
-      if (userAddress !== _user.userAddress) {
+    const bindEvent: any = bindEvents[bindEvents.length - 1]
+    const _signedBoundSocial = JSON.parse(hexToUtf8(
+      bindEvent.signedBoundSocials.slice(2))) as IsignedBoundSocials
+
+    if (JSON.stringify(_signedBoundSocial.socialMedias) !== JSON.stringify(_user.boundSocials)) {
+      const currentUserPublicKey = await this.getCurrentUserPublicKey()
+      const userPublicKey = publicKeyFromHexStr(currentUserPublicKey.slice(2))
+      if (!userPublicKey.verify(
+        sodium.from_hex(_signedBoundSocial.signature.slice(2)),
+        JSON.stringify(_signedBoundSocial.socialMedias)
+      )) {
+        storeLogger.error(new Error('invalid signature'))
         return
       }
 
-      const _signedBoundSocial = JSON.parse(hexToUtf8(
-        boundSocialEvent.signedBoundSocials.slice(2))) as IsignedBoundSocials
-
-      if (JSON.stringify(_signedBoundSocial.socialMedias) !== JSON.stringify(_user.boundSocials)) {
-        const currentUserPublicKey = await this.getCurrentUserPublicKey()
-        const userPublicKey = publicKeyFromHexStr(currentUserPublicKey.slice(2))
-        if (!userPublicKey.verify(
-          sodium.from_hex(_signedBoundSocial.signature.slice(2)),
-          JSON.stringify(_signedBoundSocial.socialMedias)
-        )) {
-          storeLogger.error(new Error('invalid signature'))
-          return
-        }
-
-        await this.updateBoundSocials(_signedBoundSocial.socialMedias, _user)
-      }
-    }))
+      await this.updateBoundSocials(_signedBoundSocial.socialMedias, _user)
+    }
 
     await this.updateLastFetchBlockOfBoundSocials(lastBlock, _user)
   }
@@ -2120,23 +2160,6 @@ function getPreKey({
     id: preKeyID,
     publicKey
   }
-}
-
-function unixToday() {
-  return getUnixDay(Date.now())
-}
-
-function getUnixDay(javaScriptTimestamp: number) {
-  return Math.floor(javaScriptTimestamp / 1000 / 3600 / 24)
-}
-
-function publicKeyFromHexStr(publicKeyHexString: string) {
-  const preKeyPublicKeyEd = sodium.from_hex(publicKeyHexString)
-  const preKeyPublicKeyCurve = ed2curve.convertPublicKey(preKeyPublicKeyEd)
-  return keys.PublicKey.new(
-    preKeyPublicKeyEd,
-    preKeyPublicKeyCurve
-  )
 }
 
 function identityKeyFromHexStr(identityKeyHexString: string) {

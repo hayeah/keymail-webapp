@@ -27,6 +27,7 @@ const App = () => (
       <Route path="/check-register" component={CheckRegister} />
       <Route path="/upload-pre-keys" component={UploadPreKeys} />
       <Route path="/broadcast" component={Broadcast} />
+      <Route path="/profile/:userAddress" component={Profile} />
       <Route path="/profile" component={Profile} />
       <Route path="/proving/:platform" component={Proving} />
       <Redirect to="/" />

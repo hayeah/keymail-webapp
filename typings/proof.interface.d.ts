@@ -35,7 +35,6 @@ interface IsignedGithubClaim {
 
 interface ItwitterClaim {
   userAddress: string
-  username: string
   publicKey: string
 }
 
@@ -47,15 +46,6 @@ interface IsignedTwitterClaim {
 interface IbindingSocial extends IboundSocial {
   signedClaim: IsignedGithubClaim|IsignedTwitterClaim
   status: BINDING_SOCIAL_STATUS
-}
-
-interface Igist {
-  files: {
-    [filename: string]: {
-      raw_url: string
-    }
-  }
-  html_url: string
 }
 
 interface IbindingSocials {

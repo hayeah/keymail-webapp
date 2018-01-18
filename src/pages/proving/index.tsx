@@ -20,17 +20,19 @@ import {
 } from '../../constants'
 
 import {
-  storeLogger
+  storeLogger, getGithubClaimByRawURL
 } from '../../utils'
 
 import {
-  Igist,
   IgithubClaim,
   IsignedGithubClaim,
   ItwitterClaim,
   IsignedTwitterClaim,
   IbindingSocial,
 } from '../../../typings/proof.interface'
+
+import { GithubResource } from '../../resources/github'
+import { Itweet } from '../../resources/twitter'
 
 interface Iparams {
   platform: string
@@ -45,7 +47,6 @@ interface Istate {
   platform: string
   githubClaim?: IsignedGithubClaim
   twitterClaim?: IsignedTwitterClaim
-  twitterAccessToken?: string
   successful: boolean
 }
 
@@ -98,30 +99,6 @@ class Proving extends React.Component<Iprops, Istate> {
   }
 
   private claimTextarea: any
-
-  public async componentDidMount() {
-    if (this.state.platform === SOCIAL_MEDIA_PLATFORMS.TWITTER) {
-      const authorization =
-        '::OHJCRzF4clVCcEZnRTJUNWJET3NrR0ZwdjpXT0wyU0NSOFJKcjM4TFRCbFBFcVp6NHI2ZnlVOXFxQ0VMQmVDRTdobWJPY3VjaG5EaQ=='
-      const init = {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Authorization': 'Basic ' + authorization,
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
-        body: 'grant_type=client_credentials',
-      } as RequestInit
-
-      const oauth2: any = await fetch(`https://cors-anywhere.herokuapp.com/https://api.twitter.com/oauth2/token`, init)
-        .then((resp) => resp.json())
-      this.setState({
-        twitterAccessToken: oauth2.access_token
-      })
-
-      storeLogger.log(JSON.stringify(oauth2))
-    }
-  }
 
   public render() {
     const {
@@ -247,20 +224,13 @@ class Proving extends React.Component<Iprops, Istate> {
       return
     }
 
-    const timelineURL =
-      `https://cors-anywhere.herokuapp.com/https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=`
-      + this.state.username + '&exclude_replies=true&tweet_mode=extended'
-    const tweets: any[] = await fetch(timelineURL, {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + this.state.twitterAccessToken,
-      }
-    })
-      .then((resp) => resp.json())
-    storeLogger.log(JSON.stringify(tweets))
+    const {
+      twitterResource
+    } = this.props.store
+    const tweets = await twitterResource.getUserTimeline(this.state.username)
 
     const _claimText = getTwitterClaim(this.state.twitterClaim)
-    let claimTweet: any
+    let claimTweet: Itweet|undefined
     for (let tweet of tweets) {
       if (tweet.full_text === _claimText) {
         storeLogger.log(JSON.stringify(tweet))
@@ -273,6 +243,7 @@ class Proving extends React.Component<Iprops, Istate> {
       alert('cloud not found claim!')
       return
     }
+
     const bindingSocial: IbindingSocial = {
       status: BINDING_SOCIAL_STATUS.CHECKED,
       signedClaim: this.state.twitterClaim,
@@ -284,13 +255,7 @@ class Proving extends React.Component<Iprops, Istate> {
   }
 
   private checkGithubProof = async () => {
-    const init = {
-      method: 'GET',
-      mode: 'cors',
-    } as RequestInit
-
-    const gists: Igist[] = await fetch(`https://api.github.com/users/${this.state.username}/gists`, init)
-    .then((resp) => resp.json())
+    const gists = await GithubResource.getGists(this.state.username)
 
     let proofURL: string = ''
     let proofRawURL: string = ''
@@ -307,20 +272,7 @@ class Proving extends React.Component<Iprops, Istate> {
       return
     }
 
-    const signedClaim: IsignedGithubClaim|null = await fetch(proofRawURL, init)
-    .then((resp) => resp.text())
-    .then((text) => {
-      const matches = /\`\`\`json([\s\S]*?)\`\`\`[\s\S]*?\`\`\`\s*(.*?)\s*\`\`\`/g.exec(text)
-      if (matches === null || matches.length !== 3) {
-        return null
-      }
-      const _claim: IgithubClaim = JSON.parse(matches[1])
-      const _signature = matches[2]
-      return {
-        githubClaim: _claim,
-        signature: _signature,
-      } as IsignedGithubClaim
-    })
+    const signedClaim: IsignedGithubClaim|null = await getGithubClaimByRawURL(proofRawURL)
     if (signedClaim === null) {
       // do something here with a mismatch
       alert('text could not match')
@@ -382,7 +334,6 @@ class Proving extends React.Component<Iprops, Istate> {
       case SOCIAL_MEDIA_PLATFORMS.TWITTER:
         const twitterClaim: ItwitterClaim = {
           userAddress: currentUser.userAddress,
-          username: this.state.username,
           publicKey: currentUserPublicKey,
         }
         const twitterSignature = '0x' + this.props.store.currentUserSign(JSON.stringify(twitterClaim))
@@ -395,8 +346,6 @@ class Proving extends React.Component<Iprops, Istate> {
         })
         break
       case SOCIAL_MEDIA_PLATFORMS.FACEBOOK:
-        break
-      case SOCIAL_MEDIA_PLATFORMS.HACKER_NEWS:
         break
       default:
     }

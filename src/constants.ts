@@ -128,7 +128,6 @@ export enum SOCIAL_MEDIA_PLATFORMS {
   GITHUB = 'github',
   TWITTER = 'twitter',
   FACEBOOK = 'facebook',
-  HACKER_NEWS = 'hacker_news',
 }
 
 export const SOCIAL_MEDIAS = [
@@ -144,16 +143,18 @@ export const SOCIAL_MEDIAS = [
     'platform': SOCIAL_MEDIA_PLATFORMS.FACEBOOK,
     'label': 'Facebook',
   },
-  {
-    'platform': SOCIAL_MEDIA_PLATFORMS.HACKER_NEWS,
-    'label': 'Hacker News',
-  },
 ]
 
 export enum BINDING_SOCIAL_STATUS {
   CHECKED = 100,
   TRANSACTION_CREATED = 200,
   CONFIRMED = 300,
+}
+
+export enum VERIFY_SOCIAL_STATUS {
+  NOT_FOUND = 0,
+  INVALID = 100,
+  VALID = 200,
 }
 
 export const GITHUB_GIST_FILENAME = 'keymail.md'

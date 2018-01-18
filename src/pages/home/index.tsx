@@ -72,6 +72,7 @@ class Home extends React.Component<{}, Istate> {
       listenForConnectStatusChange(this.connectStatusListener)
     }
   }
+
   public componentWillUnmount() {
     const {
       stopFetchMessages,
@@ -81,6 +82,7 @@ class Home extends React.Component<{}, Istate> {
     stopFetchMessages()
     removeConnectStatusListener(this.connectStatusListener)
   }
+
   public render() {
     const {
       connectStatus,
