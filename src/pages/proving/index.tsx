@@ -44,7 +44,6 @@ interface Iprops extends RouteComponentProps<Iparams> {
 interface Istate {
   isProving: boolean
   username: string
-  platform: string
   githubClaim?: IsignedGithubClaim
   twitterClaim?: IsignedTwitterClaim
   successful: boolean
@@ -90,15 +89,16 @@ class Proving extends React.Component<Iprops, Istate> {
   constructor(props: Iprops) {
     super(props)
 
+    this.platform = props.match.params.platform
     this.state = {
       isProving: false,
       username: '',
-      platform: props.match.params.platform,
       successful: false,
     }
   }
 
   private claimTextarea: any
+  private platform: string
 
   public render() {
     const {
@@ -110,7 +110,7 @@ class Proving extends React.Component<Iprops, Istate> {
       </CommonHeaderPage>
     }
 
-    const platform = this.state.platform
+    const platform = this.platform
     if (!Object.values(SOCIAL_MEDIA_PLATFORMS).includes(platform)) {
       return <CommonHeaderPage>
         <p>Invalid platform: {platform}</p>
@@ -141,7 +141,7 @@ class Proving extends React.Component<Iprops, Istate> {
       } else if (typeof this.state.githubClaim !== 'undefined') {
         return <div>
           <p>{this.state.username}</p>
-          <p>@{this.state.platform}</p>
+          <p>@{this.platform}</p>
           <p>Login to GitHub and paste the text below into a public gist called {GITHUB_GIST_FILENAME}.</p>
           <textarea
             cols={80}
@@ -169,7 +169,7 @@ class Proving extends React.Component<Iprops, Istate> {
         const tweetClaimURL = 'https://twitter.com/home?status=' + encodeURI(twitterClaimText)
         return <div>
           <p>{this.state.username}</p>
-          <p>@{this.state.platform}</p>
+          <p>@{this.platform}</p>
           <p>Please tweet the text below exactly as it appears.</p>
           <textarea
             cols={80}
@@ -310,7 +310,7 @@ class Proving extends React.Component<Iprops, Istate> {
 
     const currentUserPublicKey = await getCurrentUserPublicKey()
 
-    switch (this.state.platform) {
+    switch (this.platform) {
       case SOCIAL_MEDIA_PLATFORMS.GITHUB:
         const githubClaim: IgithubClaim = {
           userAddress: currentUser.userAddress,

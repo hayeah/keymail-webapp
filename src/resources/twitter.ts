@@ -57,7 +57,7 @@ export class TwitterResource {
       body: 'grant_type=client_credentials',
     } as RequestInit
 
-    await fetch(`${this.apiPrefix}/oauth2/token`, init)
+    fetch(`${this.apiPrefix}/oauth2/token`, init)
       .then((resp) => resp.json())
       .then(oauth2 => {
         this.accessToken = oauth2.access_token

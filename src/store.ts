@@ -1528,24 +1528,28 @@ export class Store {
     }
     const _user: Iuser = this.currentUser as Iuser
 
-    const bindEvent: any = bindEvents[bindEvents.length - 1]
-    const _signedBoundSocial = JSON.parse(hexToUtf8(
-      bindEvent.signedBoundSocials.slice(2))) as IsignedBoundSocials
+    let lastBoundSocial: IboundSocials|undefined
 
-    if (JSON.stringify(_signedBoundSocial.socialMedias) !== JSON.stringify(_user.boundSocials)) {
-      const currentUserPublicKey = await this.getCurrentUserPublicKey()
-      const userPublicKey = publicKeyFromHexStr(currentUserPublicKey.slice(2))
-      if (!userPublicKey.verify(
-        sodium.from_hex(_signedBoundSocial.signature.slice(2)),
-        JSON.stringify(_signedBoundSocial.socialMedias)
-      )) {
-        storeLogger.error(new Error('invalid signature'))
-        return
+    for (let bindEvent of bindEvents) {
+      const _signedBoundSocial = JSON.parse(hexToUtf8(
+        bindEvent.signedBoundSocials.slice(2))) as IsignedBoundSocials
+
+      if (JSON.stringify(_signedBoundSocial.socialMedias) !== JSON.stringify(_user.boundSocials)) {
+        const currentUserPublicKey = await this.getCurrentUserPublicKey()
+        const userPublicKey = publicKeyFromHexStr(currentUserPublicKey.slice(2))
+        if (!userPublicKey.verify(
+          sodium.from_hex(_signedBoundSocial.signature.slice(2)),
+          JSON.stringify(_signedBoundSocial.socialMedias)
+        )) {
+          storeLogger.error(new Error('invalid signature'))
+          continue
+        }
+        lastBoundSocial = _signedBoundSocial.socialMedias
       }
-
-      await this.updateBoundSocials(_signedBoundSocial.socialMedias, _user)
     }
-
+    if (typeof lastBoundSocial !== 'undefined') {
+      await this.updateBoundSocials(lastBoundSocial, _user)
+    }
     await this.updateLastFetchBlockOfBoundSocials(lastBlock, _user)
   }
 

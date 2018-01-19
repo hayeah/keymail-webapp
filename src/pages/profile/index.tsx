@@ -39,7 +39,7 @@ import { sha3 } from 'trustbase'
 import { Icon } from 'antd'
 
 interface Iparams {
-  userAddress: string
+  userAddress?: string
 }
 
 interface Iprops extends RouteComponentProps<Iparams> {
