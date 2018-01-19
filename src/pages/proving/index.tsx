@@ -227,6 +227,11 @@ class Proving extends React.Component<Iprops, Istate> {
     const {
       twitterResource
     } = this.props.store
+    if (typeof twitterResource === 'undefined') {
+      // todo deal with could not get twitter resource
+      return
+    }
+
     const tweets = await twitterResource.getUserTimeline(this.state.username)
 
     const _claimText = getTwitterClaim(this.state.twitterClaim)

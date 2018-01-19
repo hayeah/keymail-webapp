@@ -149,6 +149,10 @@ class Profile extends React.Component<Iprops, Istate> {
         const {
         twitterResource
       } = this.props.store
+        if (typeof twitterResource === 'undefined') {
+          // todo deal with could not get twitter resource
+          return
+        }
         const tweet = await twitterResource.getTweetByProofURL(socials.twitter.proofURL)
         if (tweet === null) {
           this.setState({

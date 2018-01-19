@@ -169,12 +169,16 @@ export class Store {
   private broadcastMessagesSignatures: string[]
   private _twitterResource: TwitterResource|undefined
 
-  public get twitterResource(): TwitterResource {
+  public get twitterResource(): TwitterResource|undefined {
     if (typeof this._twitterResource === 'undefined') {
-      this._twitterResource = new TwitterResource(
-          '8rBG1xrUBpFgE2T5bDOskGFpv',
-          'WOL2SCR8RJr38LTBlPEqZz4r6fyU9qqCELBeCE7hmbOcuchnDi',
-        )
+      const consumerKey = process.env.REACT_APP_TWITTER_CONSUMER_KEY
+      const secretKey = process.env.REACT_APP_TWITTER_SECRET_KEY
+      if (typeof consumerKey === 'undefined' || typeof secretKey === 'undefined') {
+        storeLogger.error('REACT_APP_TWITTER_CONSUMER_KEY or REACT_APP_TWITTER_SECRET_KEY must be set.')
+        return undefined
+      }
+
+      this._twitterResource = new TwitterResource(consumerKey, secretKey)
     }
 
     return this._twitterResource
