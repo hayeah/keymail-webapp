@@ -1532,27 +1532,22 @@ export class Store {
     }
     const _user: Iuser = this.currentUser as Iuser
 
-    let lastBoundSocial: IboundSocials|undefined
-
-    for (let bindEvent of bindEvents) {
+    for (let i = bindEvents.length - 1; i >= 0; i--) {
+      const bindEvent = bindEvents[i]
       const _signedBoundSocial = JSON.parse(hexToUtf8(
         bindEvent.signedBoundSocials.slice(2))) as IsignedBoundSocials
 
       if (JSON.stringify(_signedBoundSocial.socialMedias) !== JSON.stringify(_user.boundSocials)) {
         const currentUserPublicKey = await this.getCurrentUserPublicKey()
         const userPublicKey = publicKeyFromHexStr(currentUserPublicKey.slice(2))
-        if (!userPublicKey.verify(
+        if (userPublicKey.verify(
           sodium.from_hex(_signedBoundSocial.signature.slice(2)),
           JSON.stringify(_signedBoundSocial.socialMedias)
         )) {
-          storeLogger.error(new Error('invalid signature'))
-          continue
+          await this.updateBoundSocials(_signedBoundSocial.socialMedias, _user)
+          break
         }
-        lastBoundSocial = _signedBoundSocial.socialMedias
       }
-    }
-    if (typeof lastBoundSocial !== 'undefined') {
-      await this.updateBoundSocials(lastBoundSocial, _user)
     }
     await this.updateLastFetchBlockOfBoundSocials(lastBlock, _user)
   }
