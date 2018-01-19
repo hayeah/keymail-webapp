@@ -119,8 +119,7 @@ class Profile extends React.Component<Iprops, Istate> {
     const userPublicKey = publicKeyFromHexStr(currentUserPublicKey.slice(2))
 
     const socials = this.state.userBoundSocials
-    ;
-    (async () => {
+    const verifyGithub = async () => {
       if (typeof socials.github !== 'undefined') {
         const signedGithubClaim = await getGithubClaimByProofURL(socials.github.proofURL)
         if (signedGithubClaim === null) {
@@ -141,10 +140,10 @@ class Profile extends React.Component<Iprops, Istate> {
           }
         }
       }
-    })()
+    }
+    verifyGithub()
 
-    ;
-    (async () => {
+    const verifyTwitter = async () => {
       if (typeof socials.twitter !== 'undefined') {
         const {
         twitterResource
@@ -184,7 +183,8 @@ class Profile extends React.Component<Iprops, Istate> {
           }
         }
       }
-    })()
+    }
+    verifyTwitter()
   }
 
   public fetchUserProofs = async () => {
