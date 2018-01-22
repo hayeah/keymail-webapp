@@ -302,10 +302,12 @@ class Profile extends React.Component<Iprops, Istate> {
       getBlockHash,
     } = this.props.store
     if (connectStatus === TRUSTBASE_CONNECT_STATUS.SUCCESS) {
+      let userAddress = this.state.userAddress
       if (currentUser) {
         if ('' === this.state.userAddress) {
+          userAddress = currentUser.userAddress
           this.setState({
-            userAddress: currentUser.userAddress,
+            userAddress,
           })
         }
         if (!isFetchingBoundEvents) {
@@ -313,7 +315,7 @@ class Profile extends React.Component<Iprops, Istate> {
         }
       }
 
-      getIdentity(this.state.userAddress).then(async ({blockNumber}) => {
+      getIdentity(userAddress).then(async ({blockNumber}) => {
         return await getBlockHash(blockNumber)
       }).then(blockHash => {
           this.setState({userBlockHash: blockHash})
