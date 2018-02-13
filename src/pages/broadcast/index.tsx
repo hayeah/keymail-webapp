@@ -6,7 +6,6 @@ import { UsersStore } from '../../stores/UsersStore'
 import { BroadcastMessagesStore } from '../../stores/BroadcastMessagesStore'
 import { MetaMaskStore } from '../../stores/MetaMaskStore'
 import { BroadcastForm } from './BroadcastForm'
-import MenuBody from '../../containers/MenuBody'
 import HashAvatar from '../../components/HashAvatar'
 
 import * as styles from './index.css'
@@ -42,7 +41,8 @@ class Broadcast extends React.Component<IProps> {
 
   public render() {
     let form: JSX.Element | null = null
-    if (this.props.usersStore.hasUser) {
+    const { hasUser } = this.props.usersStore
+    if (hasUser) {
       form = <div className={styles.postForm}>
         <HashAvatar
           className={styles.avatar}
@@ -62,15 +62,13 @@ class Broadcast extends React.Component<IProps> {
         <Divider/>
       </div>
     })
-    return <MenuBody routePath="/discover">
-      <div className={styles.broadcast}>
-        {form}
-        <div className={styles.messagesContainer}>
-          <Divider/>
-          <div>{messages}</div>
-        </div>
+    return <div className={styles.broadcast}>
+      {form}
+      <div className={styles.messagesContainer}>
+        {hasUser ? <Divider /> : null}
+        <div>{messages}</div>
       </div>
-    </MenuBody>
+    </div>
   }
 }
 
