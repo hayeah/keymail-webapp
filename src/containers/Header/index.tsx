@@ -86,7 +86,7 @@ class Header extends React.Component<IProps, IState> {
             <Link
               tabIndex={0}
               className={styles.logoText}
-              onClick={() => this.setState({ selectedNav: '/discover'})}
+              onClick={() => this.setState({ selectedNav: '/discover' })}
               to="/"
             >
               Keymail
@@ -105,11 +105,11 @@ class Header extends React.Component<IProps, IState> {
             </Menu.Item>
             {
               this.injectedProps.usersStore.hasUser
-                ? <Menu.Item key="/chat">
-                    <Link to="/chat" className={styles.menuItem}>
-                      <Icon type="message" className={styles.menuIcon} />Chat
+                ? <Menu.Item key="/messages">
+                  <Link to="/messages" className={styles.menuItem}>
+                    <Icon type="message" className={styles.menuIcon} />Messages
                     </Link>
-                  </Menu.Item>
+                </Menu.Item>
                 : null
             }
           </Menu>
@@ -127,12 +127,12 @@ class Header extends React.Component<IProps, IState> {
   }
 
   private getNetworkStatus() {
-    const {isPending} = this.injectedProps.metaMaskStore
+    const { isPending } = this.injectedProps.metaMaskStore
     if (isPending) {
       return null
     }
 
-    const {connectStatus} = this.injectedProps.metaMaskStore
+    const { connectStatus } = this.injectedProps.metaMaskStore
 
     return (
       <>
@@ -151,8 +151,8 @@ class Header extends React.Component<IProps, IState> {
         </Tooltip>
         <span
           className={classnames(styles.networkOptionsButton, 'ant-dropdown-link')}
-          // looks like antd does not support keyboard accessibility well
-          // tabIndex={0}
+        // looks like antd does not support keyboard accessibility well
+        // tabIndex={0}
         >
           {this.getNetworkText()}
         </span>
@@ -218,7 +218,7 @@ class Header extends React.Component<IProps, IState> {
       return null
     }
 
-    const {user} = this.injectedProps.usersStore.currentUserStore!
+    const { user } = this.injectedProps.usersStore.currentUserStore!
 
     return (
       <Dropdown
@@ -229,8 +229,8 @@ class Header extends React.Component<IProps, IState> {
         <a
           title={user.userAddress}
           className={classnames(styles.userOptionsButton, 'ant-dropdown-link')}
-          // looks like antd does not support keyboard accessibility well
-          // tabIndex={0}
+        // looks like antd does not support keyboard accessibility well
+        // tabIndex={0}
         >
           {this.getUserAvatar()}
           <Icon type="down" className={styles.userAvatarDownIcon} />
@@ -240,7 +240,7 @@ class Header extends React.Component<IProps, IState> {
   }
 
   private getUserAvatar() {
-    const {avatarHash} = this.injectedProps.usersStore.currentUserStore!
+    const { avatarHash } = this.injectedProps.usersStore.currentUserStore!
 
     return (
       <HashAvatar
@@ -274,11 +274,11 @@ class Header extends React.Component<IProps, IState> {
             title="Click to copy"
           >
             <a className={styles.userAddressLink} onClick={this.handleCopyUserAddress}>
-                <UserAddress
-                  address={user.userAddress}
-                  className={styles.userAddress}
-                  maxLength={8}
-                />
+              <UserAddress
+                address={user.userAddress}
+                className={styles.userAddress}
+                maxLength={8}
+              />
             </a>
           </Tooltip>
         </Menu.Item>
