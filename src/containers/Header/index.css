@@ -12,15 +12,31 @@
   transition: transform .25s ease-in-out;
 }
 
-.content {
+.content, .menu {
   display: flex;
   align-items: center;
+}
+
+.menu, .logo {
+  margin-right: auto;
+}
+
+.menu {
+  margin-left: 2rem;
+  font-weight: bold;
+}
+
+.menuIcon {
+  margin-right: 4px;
+}
+
+:global .ant-menu-item-selected :local .menuItem {
+  color: #1890ff !important;
 }
 
 .logo {
   font-size: 1.5rem;
   margin: 0;
-  margin-right: auto;
 }
 
 .logoText {

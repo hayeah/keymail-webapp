@@ -67,6 +67,7 @@ class Header extends React.Component<IProps, IState> {
     hidden: false,
     hasShadow: false,
     isExporting: false,
+    selectedNav: this.props.location.pathname,
   })
 
   private readonly injectedProps = this.props as Readonly<IInjectedProps>
@@ -82,15 +83,47 @@ class Header extends React.Component<IProps, IState> {
       <header className={styles.header}>
         <div className={classnames(styles.content, 'container')}>
           <h1 className={styles.logo}>
-            <Link tabIndex={0} className={styles.logoText} to="/">
+            <Link
+              tabIndex={0}
+              className={styles.logoText}
+              onClick={() => this.setState({ selectedNav: '/discover'})}
+              to="/"
+            >
               Keymail
             </Link>
           </h1>
+          <Menu
+            className={styles.menu}
+            selectedKeys={[this.state.selectedNav]}
+            mode="horizontal"
+            onClick={this.handleChangeNav}
+          >
+            <Menu.Item key="/discover">
+              <Link to="/discover" className={styles.menuItem}>
+                <Icon type="bulb" className={styles.menuIcon} />Discover
+              </Link>
+            </Menu.Item>
+            {
+              this.injectedProps.usersStore.hasUser
+                ? <Menu.Item key="/chat">
+                    <Link to="/chat" className={styles.menuItem}>
+                      <Icon type="message" className={styles.menuIcon} />Chat
+                    </Link>
+                  </Menu.Item>
+                : null
+            }
+          </Menu>
           {this.getNetworkStatus()}
           {this.getUserMenu()}
         </div>
       </header>
     )
+  }
+
+  private handleChangeNav = (e: any) => {
+    this.setState({
+      selectedNav: e.key,
+    })
   }
 
   private getNetworkStatus() {
@@ -359,6 +392,7 @@ interface IState {
   hidden: boolean
   hasShadow: boolean
   isExporting: boolean
+  selectedNav: string
 }
 
 export default withRouter(Header)
